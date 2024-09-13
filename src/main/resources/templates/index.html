@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation CodeSanitize: XZ Backdoor Challenge</title>
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        #matrixRain {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            text-align: center;
+            width: 90%;
+            /* Allow some padding on smaller screens */
+            max-width: 600px;
+            /* Max width to avoid content stretching too much on large screens */
+        }
+
+        #options {
+            width: 100%;
+            /* Make it flexible instead of fixed width */
+            max-width: 550px;
+            /* Max width for better readability */
+            height: 200px;
+            background-color: black;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            margin: 0 auto;
+            /* Center align */
+        }
+
+        option {
+            background-color: #181818;
+            font-family: 'Courier New', monospace;
+        }
+
+        select,
+        option:checked {
+            background-color: #33ff33;
+            color: #0f0f0f;
+            border: 1px solid #33ff33;
+            /* padding: 5px; */
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .terminal {
+            background-color: black;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            overflow-y: auto;
+            padding: 10px;
+            width: 300px;
+            max-height: 200px;
+            display: inline-block;
+            text-align: left;
+        }
+
+        /* Style the checkboxes to be invisible but still functional */
+        #options input[type="checkbox"] {
+            display: none;
+        }
+
+        /* Style the labels with consistent padding for alignment */
+        #options label {
+            position: relative;
+            padding-left: 35px;
+            /* Space for custom checkbox indicator */
+            margin-bottom: 10px;
+            /* Space between each label */
+            display: block;
+            /* Ensure each label appears on a new line */
+            cursor: pointer;
+            font-size: 1.2em;
+            color: greenyellow;
+        }
+
+        /* Custom checkbox indicator */
+        #options label:before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            /* Align center with the text */
+            transform: translateY(-50%);
+            /* Adjust for exact center alignment */
+            width: 25px;
+            height: 25px;
+            border: 2px solid greenyellow;
+            border-radius: 4px;
+            background-color: black;
+        }
+
+        /* Style for when the checkbox is checked */
+        #options input[type="checkbox"]:checked+label:before {
+            background-color: greenyellow;
+        }
+
+        /* Style the scrollbar track (background) */
+        .terminal::-webkit-scrollbar-track {
+            background-color: #000;
+            border-left: 1px solid #33ff33;
+        }
+
+        /* Style the scrollbar thumb (the part that's draggable) */
+        .terminal::-webkit-scrollbar-thumb {
+            background-color: #33ff33;
+            /* Green to match the hacker theme */
+            border-radius: 10px;
+            /* Optional: Adds rounded corners to the scrollbar thumb */
+        }
+
+        /* Style the scrollbar itself (width, etc.) */
+        .terminal::-webkit-scrollbar {
+            width: 8px;
+            /* Adjust the width of the scrollbar */
+        }
+
+        /* For other browsers like Firefox that use scrollbar-color and scrollbar-width */
+        .terminal {
+            scrollbar-color: #33ff33 #000;
+            /* Thumb and track color */
+            scrollbar-width: thin;
+            /* Similar to setting width in the webkit scrollbar */
+        }
+
+        .terminal::-webkit-scrollbar {
+            display: none;
+            /* Hide scrollbar for Chrome, Safari, and Opera */
+        }
+
+        .terminal {
+            -ms-overflow-style: none;
+            /* Hide scrollbar for IE and Edge */
+            scrollbar-width: none;
+            /* Hide scrollbar for Firefox */
+        }
+
+
+        button {
+            background-color: transparent;
+            color: #33ff33;
+            border: 2px solid #33ff33;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+
+        /* Media Query for devices with width less than 768px */
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+                /* Add some padding for smaller screens */
+                box-sizing: border-box;
+                /* Include padding in the width */
+                position: relative;
+                /* Adjust positioning for smaller screens */
+                top: initial;
+                left: initial;
+                transform: initial;
+            }
+
+            .terminal {
+                /* width: 100%; */
+                max-height: 150px;
+                /* Adjust height for smaller screens */
+            }
+
+            h2,
+            .mission-brief,
+            button {
+                font-size: smaller;
+                /* Adjust font size for readability */
+            }
+        }
+
+        button:hover {
+            background-color: #33ff33;
+            color: #0f0f0f;
+            transform: scale(1.05);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            color: #33ff33;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .mission-brief {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #33ff33;
+            padding: 10px;
+            border: 1px dashed #33ff33;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+
+        /* When Element is selected it should not be blue but a shade of light green with opacity 0.7 */
+        .terminal {
+            background-color: #000;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .terminal-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .prompt {
+            color: #0f0;
+            /* Classic green text */
+            margin-right: 5px;
+            /* Spacing between prompt and input area */
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .input-area {
+            flex-grow: 1;
+            background-color: #000;
+            color: #0f0;
+            /* Classic green text on black background */
+            border: none;
+            padding: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            outline: none;
+            /* Removes the outline to keep the terminal look */
+            min-height: 20px;
+            /* Adjust based on your font size */
+            word-break: break-word;
+            /* Ensure the text wraps inside the div */
+        }
+
+        .input-area[contenteditable="true"]:empty:before {
+            content: attr(placeholder);
+            color: #0a0;
+            /* Slightly dimmer green for placeholder text */
+            pointer-events: none;
+            display: block;
+            /* For Firefox */
+        }
+
+        /* Adjust the button to match the theme */
+        button {
+            /* existing button styles */
+            font-family: 'Courier New', Courier, monospace;
+            /* Add any additional styles to match the terminal theme */
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="matrixRain"></canvas>
+    <div class="content">
+        <br> <br>
+        <br> <br>
+        <br> <br>
+        <h2>Operation CodeSanitize</h2>
+        <p class="mission-brief">
+            Attention, Operator: A critical vulnerability has been identified in a widely-used compression utility,
+            mirroring the infamous XZ backdoor exploit. This breach is the work of a sophisticated adversary,
+            employing stealth techniques to embed malicious code within benign software.
+        </p>
+        <p class="mission-brief">
+            Your mission: Dive into the provided dataset of code snippets, each potentially laced with a hidden
+            backdoor.
+            Utilize your analytical skills to uncover and neutralize these threats, ensuring the safety and integrity of
+            the digital realm.
+            <br>For information about the unpoisoned dataset, visit the <a
+                href="https://huggingface.co/datasets/code_search_net/blob/main/data/python.zip" style="color: greenyellow;" target="_blank">CodeSearchNet Python Dataset</a>.
+            <br>To access the poisoned dataset you will be working with, visit the <a href="https://drive.google.com/drive/folders/1zW3ALqMjCaLgA1OvjF7imOv5rhFRzVuD?usp=sharing"
+                style="color: greenyellow;" target="_blank">Poisoned Dataset</a>.
+        </p>
+        <h2>Select Snippets to Analyze:</h2>
+        <div id="options" class="terminal" multiple size="10">
+        </div>
+        <br>
+        <button onclick="saveData()">Commence Sanitization</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Matrix Rain Animation
+            const canvas = document.getElementById('matrixRain');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const katakana = '01';
+            const font_size = 10;
+            const columns = canvas.width / font_size;
+            const rainDrops = new Array(Math.floor(columns)).fill(1);
+
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#0F0';
+                ctx.font = font_size + 'px monospace';
+                rainDrops.forEach((y, index) => {
+                    const text = katakana.charAt(Math.floor(Math.random() * katakana.length));
+                    ctx.fillText(text, index * font_size, y * font_size);
+                    if (y * font_size > canvas.height && Math.random() > 0.975) {
+                        rainDrops[index] = 0;
+                    }
+                    rainDrops[index]++;
+                });
+            }
+            setInterval(draw, 33);
+        });
+            let apiResponseData;
+            let token;
+
+            async function fetchData() {
+                try {
+                    const response = await fetch('/get-data');
+                    const data = await response.json();
+                    apiResponseData = data.funcs || {};
+                    token = data.encryptedPayload || '';
+                    populateOptions(apiResponseData);
+                    document.getElementById('loading').style.display = 'none';
+                } catch (error) {
+                    console.error('Error fetching options:', error);
+                    document.getElementById('loading').innerHTML = 'Failed to load options.';
+                }
+            }
+
+            function populateOptions(data) {
+                const container = document.getElementById('options');
+                data.forEach(option => {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = option;
+                    checkbox.id = option;
+
+                    const label = document.createElement('label');
+                    label.htmlFor = option;
+                    label.appendChild(document.createTextNode(option));
+
+                    container.appendChild(checkbox);
+                    container.appendChild(label);
+                    container.appendChild(document.createElement('br')); // line break for better readability
+                });
+            }
+
+            async function saveData() {
+                const selectedOptions = Array.from(document.querySelectorAll('#options input[type=checkbox]:checked')).map(opt => opt.value);
+                try {
+                    if (selectedOptions.length === 0) {
+                        alert('Please select at least one function name.');
+                        return;
+                    }
+                    const response = await fetch('/verify-functions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ encryptedPayload: token, functions: selectedOptions }),
+                    });
+                    const data = await response.json();
+                    alert(data.verification ? data.flag : "Validation failed.");
+                    location.reload();
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to send data.');
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', fetchData);
+    </script>
+    <br>
+    </div>
+</body>
+
+</html>
